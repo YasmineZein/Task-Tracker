@@ -27,7 +27,7 @@
        },
    }, {
        sequelize,
-       modelName: 'User ',
+       modelName: 'User',
        timestamps: false,
    });
 

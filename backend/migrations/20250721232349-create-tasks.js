@@ -1,11 +1,10 @@
-   const { DataTypes } = require('sequelize');
-   const sequelize = require('../config/database'); // Adjust the path as necessary
-   const User = require('./User');
+'use strict';
 
-  
-
-   const Task = sequelize.define('Task', {
-       taskId: {
+/** @type {import('sequelize-cli').Migration} */
+module.exports = {
+  async up (queryInterface, DataTypes) {
+    await queryInterface.createTable('Tasks', {
+      taskId: {
            type: DataTypes.INTEGER,
            autoIncrement: true,
            primaryKey: true,
@@ -14,9 +13,11 @@
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
-            model: User,
+            model: 'Users',
             key: 'userId',
             },
+            onUpdate: 'CASCADE',
+            onDelete: 'CASCADE',
         },
        title: {
            type: DataTypes.STRING,
@@ -46,23 +47,11 @@
        priority: {
            type: DataTypes.INTEGER,
            allowNull: true,
-       },
-       created_at: {
-           type: DataTypes.DATE,
-           defaultValue: DataTypes.NOW,
-       },
-       updated_at: {
-           type: DataTypes.DATE,
-           defaultValue: DataTypes.NOW,
-       },
-   }, {
-       sequelize,
-       modelName: 'Task',
-       timestamps: true,
+       }
    });
+  },
 
-   User.hasMany(Task, { foreignKey: 'userId' });
-   Task.belongsTo(User, { foreignKey: 'userId' });
-
-   module.exports = Task;
-   
+  async down (queryInterface) {
+    await queryInterface.dropTable('Tasks');
+  }
+};
