@@ -4,9 +4,11 @@ const sequelize = require('./config/database');
 const app = express();
 const PORT = process.env.DB_PORT;
 
-app.use(express.json());
-
+const userSignupRouter = require('./routes/userSignup');
 const userLoginRouter = require('./routes/userLogin');
+
+app.use(express.json());
+app.use('/api/auth', userSignupRouter);
 app.use('/api/auth', userLoginRouter);
 
 sequelize
