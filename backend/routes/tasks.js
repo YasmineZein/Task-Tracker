@@ -86,4 +86,24 @@ router.put('/tasks/:id', async (req, res) => {
   }
 });
 
+router.delete('/tasks/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const task = await Task.findByPk(id);
+    if (!task) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Task not found.' });
+    }
+
+    await task.destroy();
+    return res.status(200).json({
+      success: true,
+      message: 'Task deleted successfully.',
+    });
+  } catch (err) {
+    console.error('Error deleting task:', err);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
 module.exports = router;
