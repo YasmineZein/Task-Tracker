@@ -5,9 +5,11 @@ const app = express();
 const PORT = process.env.DB_PORT;
 
 const userSignupRouter = require('./routes/userSignup');
+const userLoginRouter = require('./routes/userLogin');
 
 app.use(express.json());
 app.use('/api/auth', userSignupRouter);
+app.use('/api/auth', userLoginRouter);
 
 sequelize
   .authenticate()
