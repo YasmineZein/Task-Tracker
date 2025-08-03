@@ -6,7 +6,6 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is logged in
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     
