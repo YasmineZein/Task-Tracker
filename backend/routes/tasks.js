@@ -201,15 +201,37 @@ router.post('/tasks/:id/time-log', async (req, res) => {
         .json({ success: false, message: 'Task not found.' });
     }
 
+    // Initialize timeLogHistory if it doesn't exist
+    if (!task.timeLogHistory) {
+      task.timeLogHistory = [];
+    }
+
     const entryId = task.timeLogHistory.length + 1;
-    task.logged_time += duration;
-    task.timeLogHistory.push({ entryId, duration, date: new Date(), note });
+    const oldLoggedTime = task.logged_time || 0;
+    task.logged_time = oldLoggedTime + duration;
+
+    const newEntry = {
+      entryId,
+      duration,
+      date: new Date(),
+      note: note || '',
+    };
+
+    task.timeLogHistory.push(newEntry);
+
+    // Ensure the change is marked for saving
+    task.changed('timeLogHistory', true);
 
     await task.save();
+
+    console.log('Time logged successfully. New entry:', newEntry);
+    console.log('Updated timeLogHistory:', task.timeLogHistory);
+
     return res.status(200).json({
       success: true,
       message: 'Time logged successfully.',
       task,
+      entry: newEntry,
     });
   } catch (err) {
     console.error('Error logging time:', err);
@@ -240,6 +262,11 @@ router.put('/tasks/:id/time-log/:entryId', async (req, res) => {
         .json({ success: false, message: 'Task not found.' });
     }
 
+    // Initialize timeLogHistory if it doesn't exist
+    if (!task.timeLogHistory) {
+      task.timeLogHistory = [];
+    }
+
     const entry = task.timeLogHistory.find(
       (e) => e.entryId === parseInt(entryId),
     );
@@ -249,9 +276,19 @@ router.put('/tasks/:id/time-log/:entryId', async (req, res) => {
         .json({ success: false, message: 'Time log entry not found.' });
     }
 
+    const oldDuration = entry.duration;
     entry.duration = duration;
     entry.note = note || entry.note;
+
+    // Recalculate total logged time
+    task.logged_time = (task.logged_time || 0) - oldDuration + duration;
+
+    task.changed('timeLogHistory', true);
+
     await task.save();
+
+    console.log('Time entry updated:', entry);
+    console.log('Updated total logged time:', task.logged_time);
 
     return res.status(200).json({
       success: true,
@@ -283,6 +320,8 @@ router.get('/tasks/:taskId/time-summary', async (req, res) => {
       totalLoggedTime: task.logged_time || 0,
       timeLogHistory: task.timeLogHistory || [],
     };
+
+    console.log('Time summary for task', taskId, ':', timeSummary);
 
     return res.status(200).json({
       success: true,
