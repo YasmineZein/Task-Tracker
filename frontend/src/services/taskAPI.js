@@ -136,6 +136,21 @@ export const taskAPI = {
     }
   },
 
+  // Update time entry
+  updateTimeEntry: async (taskId, entryId, timeData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/time-log/${entryId}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(timeData),
+      });
+      return await handleResponse(response);
+    } catch (error) {
+      console.error('Error updating time entry:', error);
+      throw error;
+    }
+  },
+
   // Get analytics
   getAnalytics: async () => {
     try {
@@ -151,5 +166,4 @@ export const taskAPI = {
   },
 };
 
-// Export default for convenience
 export default taskAPI;

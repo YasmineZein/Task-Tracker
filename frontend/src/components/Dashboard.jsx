@@ -1,19 +1,24 @@
- import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { taskAPI } from '../services/taskAPI';
+import Timer from './Timer';
+import TimerButton from './TimerButton';
+import RunningTimersDisplay from './RunningTimersDisplay';
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeView, setActiveView] = useState('overview'); // 'overview', 'tasks'
+  const [activeView, setActiveView] = useState('overview');
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [filterPriority, setFilterPriority] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
+  const [showTimer, setShowTimer] = useState(false);
+  const [selectedTaskForTimer, setSelectedTaskForTimer] = useState(null);
   const navigate = useNavigate();
 
   // Function to fetch tasks
@@ -80,7 +85,7 @@ const Dashboard = () => {
   const handleCreateTask = async (taskData) => {
     try {
       setLoading(true);
-      setError(null); // Clear any previous errors
+      setError(null); 
       console.log('Creating task with data:', taskData);
       
       const response = await taskAPI.createTask(taskData);
@@ -142,6 +147,16 @@ const Dashboard = () => {
   const closeTaskModal = () => {
     setSelectedTask(null);
     setShowTaskModal(false);
+  };
+
+  const openTimerModal = (task) => {
+    setSelectedTaskForTimer(task);
+    setShowTimer(true);
+  };
+
+  const closeTimerModal = () => {
+    setSelectedTaskForTimer(null);
+    setShowTimer(false);
   };
 
   const toggleFilters = () => {
@@ -487,7 +502,14 @@ const Dashboard = () => {
                   ) : (
                     <div className="space-y-4">
                       {filteredTasks.map((task) => (
-                        <TaskCard key={task.taskId} task={task} onEdit={openTaskModal} onDelete={handleDeleteTask} />
+                        <TaskCard 
+                          key={task.taskId} 
+                          task={task} 
+                          onEdit={openTaskModal} 
+                          onDelete={handleDeleteTask}
+                          onOpenTimer={openTimerModal}
+                          onTimeLogged={fetchTasks}
+                        />
                       ))}
                     </div>
                   )}
@@ -506,12 +528,29 @@ const Dashboard = () => {
           onClose={closeTaskModal}
         />
       )}
+
+      {/* Timer Modal */}
+      {showTimer && selectedTaskForTimer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Timer 
+            taskId={selectedTaskForTimer.taskId}
+            onTimeLogged={() => {
+              fetchTasks();
+              closeTimerModal();
+            }}
+            onClose={closeTimerModal}
+          />
+        </div>
+      )}
+
+      {/* Running Timers Display */}
+      <RunningTimersDisplay tasks={tasks} />
     </div>
   );
 };
 
 // TaskCard Component
-const TaskCard = ({ task, onEdit, onDelete }) => {
+const TaskCard = ({ task, onEdit, onDelete, onOpenTimer, onTimeLogged }) => {
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'High': return 'bg-red-100 text-red-800 border-red-200';
@@ -533,6 +572,15 @@ const TaskCard = ({ task, onEdit, onDelete }) => {
   const formatDate = (dateString) => {
     if (!dateString) return 'No due date';
     return new Date(dateString).toLocaleDateString();
+  };
+
+  const formatLoggedTime = (hours) => {
+    if (!hours || hours === 0) return '0m';
+    if (hours < 1) {
+      const minutes = Math.round(hours * 60);
+      return `${minutes}m`;
+    }
+    return `${hours.toFixed(1)}h`;
   };
 
   return (
@@ -573,13 +621,27 @@ const TaskCard = ({ task, onEdit, onDelete }) => {
                 <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Logged: {task.logged_time}h
+                Logged: {formatLoggedTime(task.logged_time)}
               </div>
             )}
           </div>
         </div>
         
         <div className="flex items-center space-x-2 ml-4">
+          {/* Timer Button */}
+          <TimerButton task={task} onTimeLogged={onTimeLogged} />
+          
+          {/* Full Timer Modal Button */}
+          <button
+            onClick={() => onOpenTimer(task)}
+            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+            title="Open time tracker"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+          
           <button
             onClick={() => onEdit(task)}
             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
